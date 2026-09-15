@@ -18,6 +18,7 @@ export default function LookAI() {
   const [brightness, setBrightness] = useState(100);
   const [contrast, setContrast] = useState(100);
   const [saturation, setSaturation] = useState(100);
+  const [finalImage, setFinalImage] = useState<string | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,10 +46,8 @@ export default function LookAI() {
     if (ctx) {
       ctx.filter = getCombinedFilter();
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const link = document.createElement("a");
-      link.download = "look-ai-edit.png";
-      link.href = canvas.toDataURL("image/png");
-      link.click();
+      // सीधे डाउनलोड करने की बजाय, फोटो को स्क्रीन पर दिखाएँ
+      setFinalImage(canvas.toDataURL("image/png"));
     }
   };
 
@@ -124,6 +123,21 @@ export default function LookAI() {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Final Image Modal for Saving */}
+      {finalImage && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.95)", zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+          <p style={{ color: "#fff", fontSize: "16px", textAlign: "center", marginBottom: "20px", lineHeight: "1.5" }}>
+            ✅ फोटो तैयार है!<br />
+            इसे गैलरी में सेव करने के लिए <b>फोटो पर उंगली दबाकर रखें (Long Press)</b> और <span style={{color: "#38bdf8"}}>"Download Image"</span> चुनें।
+          </p>
+          <img src={finalImage} alt="Final Edit" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: "8px", border: "2px solid #38bdf8" }} />
+          
+          <button onClick={() => setFinalImage(null)} style={{ marginTop: "30px", padding: "12px 30px", background: "#ef4444", color: "#fff", border: "none", borderRadius: "25px", fontSize: "16px", fontWeight: "bold", cursor: "pointer" }}>
+            वापस जाएँ (Close)
+          </button>
         </div>
       )}
     </div>
