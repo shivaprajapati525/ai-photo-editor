@@ -1,10 +1,24 @@
 "use client";
-import { useState } from "react";
+import React, { useState, useRef } from "react";
 
-export default function Home() {
+const FILTERS = [
+  { name: "Normal", filter: "none" },
+  { name: "Vintage", filter: "sepia(0.6) contrast(1.2) brightness(0.9)" },
+  { name: "B&W", filter: "grayscale(1)" },
+  { name: "Warm", filter: "sepia(0.35) saturate(1.4)" },
+  { name: "Cool", filter: "hue-rotate(180deg) saturate(0.8)" },
+  { name: "Cinema", filter: "contrast(1.4) brightness(0.85) saturate(1.2)" },
+  { name: "Vivid", filter: "saturate(2) contrast(1.1)" },
+  { name: "Soft Glow", filter: "brightness(1.15) blur(0.5px)" },
+];
+
+export default function LookAI() {
   const [image, setImage] = useState<string | null>(null);
-  const [result, setResult] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("none");
+  const [brightness, setBrightness] = useState(100);
+  const [contrast, setContrast] = useState(100);
+  const [saturation, setSaturation] = useState(100);
+  const imageRef = useRef<HTMLImageElement | null>(null);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -15,74 +29,103 @@ export default function Home() {
     }
   };
 
-  const processImage = async (action: "remove-bg" | "enhance") => {
+  const getCombinedFilter = () => {
+    return `${activeFilter === "none" ? "" : activeFilter} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
+  };
+
+  const handleDownload = () => {
     if (!image) return;
-    setLoading(true);
-    setResult(null);
+    const canvas = document.createElement("canvas");
+    const img = imageRef.current;
+    if (!img) return;
 
-    try {
-      const res = await fetch("/api/process", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image, action }),
-      });
-
-      const data = await res.json();
-      setResult(data.result);
-    } catch (err) {
-      alert("Error processing image");
-    } finally {
-      setLoading(false);
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.filter = getCombinedFilter();
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const link = document.createElement("a");
+      link.download = "look-ai-edit.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
     }
   };
 
   return (
-    <main style={{ padding: "30px", textAlign: "center", fontFamily: "sans-serif", backgroundColor: "#f9fafb", minHeight: "100vh" }}>
-      <h1 style={{ color: "#333", marginBottom: "20px" }}>Look AI</h1>
-      
-      <div style={{ marginBottom: "30px" }}>
-        <input type="file" accept="image/*" onChange={handleUpload} style={{ padding: "10px" }} />
-      </div>
+    <div style={{ minHeight: "100vh", backgroundColor: "#0f172a", color: "#f8fafc", fontFamily: "sans-serif", display: "flex", flexDirection: "column" }}>
+      {/* Top Header */}
+      <header style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #334155" }}>
+        <h1 style={{ fontSize: "20px", fontWeight: "bold", margin: 0, color: "#38bdf8" }}>Look AI</h1>
+        {image && (
+          <button onClick={handleDownload} style={{ background: "#22c55e", color: "#fff", border: "none", padding: "8px 16px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
+            Export
+          </button>
+        )}
+      </header>
 
+      {/* Main Canvas Area */}
+      <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", overflow: "hidden" }}>
+        {!image ? (
+          <label style={{ border: "2px dashed #475569", padding: "40px 20px", borderRadius: "16px", textAlign: "center", cursor: "pointer", width: "100%", maxWidth: "340px" }}>
+            <span style={{ display: "block", fontSize: "16px", color: "#94a3b8", marginBottom: "12px" }}>Tap to pick an image</span>
+            <span style={{ background: "#38bdf8", color: "#0f172a", padding: "10px 18px", borderRadius: "8px", fontWeight: "bold", display: "inline-block" }}>Choose Photo</span>
+            <input type="file" accept="image/*" onChange={handleUpload} style={{ display: "none" }} />
+          </label>
+        ) : (
+          <div style={{ position: "relative", maxWidth: "100%", maxHeight: "55vh" }}>
+            <img
+              ref={imageRef}
+              src={image}
+              alt="Workspace"
+              style={{ maxHeight: "55vh", maxWidth: "100%", objectFit: "contain", borderRadius: "12px", filter: getCombinedFilter(), transition: "filter 0.2s ease" }}
+            />
+          </div>
+        )}
+      </main>
+
+      {/* Bottom Tool Deck */}
       {image && (
-        <div style={{ marginBottom: "20px" }}>
-          <button 
-            onClick={() => processImage("remove-bg")} 
-            disabled={loading}
-            style={{ padding: "10px 20px", marginRight: "15px", cursor: "pointer", backgroundColor: "#2563eb", color: "white", border: "none", borderRadius: "5px" }}
-          >
-            Remove BG
-          </button>
-          <button 
-            onClick={() => processImage("enhance")} 
-            disabled={loading}
-            style={{ padding: "10px 20px", cursor: "pointer", backgroundColor: "#9333ea", color: "white", border: "none", borderRadius: "5px" }}
-          >
-            Enhance Photo
-          </button>
+        <div style={{ backgroundColor: "#1e293b", padding: "16px", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", borderTop: "1px solid #334155" }}>
+          {/* Sliders */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", fontSize: "12px", gap: "8px" }}>
+              <span style={{ width: "70px" }}>Bright</span>
+              <input type="range" min="50" max="150" value={brightness} onChange={(e) => setBrightness(Number(e.target.value))} style={{ flex: 1 }} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", fontSize: "12px", gap: "8px" }}>
+              <span style={{ width: "70px" }}>Contrast</span>
+              <input type="range" min="50" max="150" value={contrast} onChange={(e) => setContrast(Number(e.target.value))} style={{ flex: 1 }} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", fontSize: "12px", gap: "8px" }}>
+              <span style={{ width: "70px" }}>Color</span>
+              <input type="range" min="0" max="200" value={saturation} onChange={(e) => setSaturation(Number(e.target.value))} style={{ flex: 1 }} />
+            </div>
+          </div>
+
+          {/* Filter Scroller */}
+          <div style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "8px" }}>
+            {FILTERS.map((f) => (
+              <button
+                key={f.name}
+                onClick={() => setActiveFilter(f.filter)}
+                style={{
+                  background: activeFilter === f.filter ? "#38bdf8" : "#334155",
+                  color: activeFilter === f.filter ? "#0f172a" : "#f8fafc",
+                  border: "none",
+                  padding: "8px 14px",
+                  borderRadius: "20px",
+                  fontSize: "13px",
+                  whiteSpace: "nowrap",
+                  cursor: "pointer",
+                }}
+              >
+                {f.name}
+              </button>
+            ))}
+          </div>
         </div>
       )}
-
-      {loading && <p style={{ color: "#2563eb", fontWeight: "bold" }}>AI is working... please wait a few seconds.</p>}
-
-      <div style={{ display: "flex", justifyContent: "center", gap: "30px", marginTop: "30px", flexWrap: "wrap" }}>
-        {image && (
-          <div>
-            <h3 style={{ color: "#555" }}>Original</h3>
-            <img src={image} alt="Original" style={{ maxWidth: "300px", borderRadius: "8px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }} />
-          </div>
-        )}
-        {result && (
-          <div>
-            <h3 style={{ color: "#555" }}>Result</h3>
-            <img src={result} alt="Result" style={{ maxWidth: "300px", borderRadius: "8px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }} />
-            <br />
-            <a href={result} target="_blank" rel="noreferrer" download style={{ display: "inline-block", marginTop: "15px", color: "#2563eb", textDecoration: "none", fontWeight: "bold" }}>
-              Download Image
-            </a>
-          </div>
-        )}
-      </div>
-    </main>
+    </div>
   );
 }
