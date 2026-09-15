@@ -38,7 +38,7 @@ export default function Home() {
 
   return (
     <main style={{ padding: "30px", textAlign: "center", fontFamily: "sans-serif", backgroundColor: "#f9fafb", minHeight: "100vh" }}>
-      <h1 style={{ color: "#333", marginBottom: "20px" }}>AI Photo Editor</h1>
+      <h1 style={{ color: "#333", marginBottom: "20px" }}>Look AI</h1>
       
       <div style={{ marginBottom: "30px" }}>
         <input type="file" accept="image/*" onChange={handleUpload} style={{ padding: "10px" }} />
